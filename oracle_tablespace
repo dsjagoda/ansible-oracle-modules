@@ -23,7 +23,7 @@ options:
     service_name:
         description:
             - The database service name to connect to
-        required: true
+        required: false
     user:
         description:
             - The Oracle user name to connect to the database
@@ -41,7 +41,7 @@ options:
     tablespace:
         description:
             - The tablespace that should be managed
-        required: True
+        required: true
     state:
         description:
             - The intended state of the tablespace
@@ -686,7 +686,7 @@ def main():
         argument_spec = dict(
             hostname      = dict(default='localhost'),
             port          = dict(default=1521),
-            service_name  = dict(required=True),
+            service_name  = dict(required=False),
             mode          = dict(default='normal', choices=['normal', 'sysdba']),
             user          = dict(required=False),
             password      = dict(required=False, no_log=True),
@@ -728,7 +728,12 @@ def main():
 
     wallet_connect = '/@%s' % service_name
     try:
-        if (not user and not password ): # If neither user or password is supplied, the use of an oracle wallet is assumed
+        if (not user and not password and not service_name): # Assuming that ORACLE_SID environment variable is set and this is a bequeath connection
+            if mode == 'sysdba':
+                conn = cx_Oracle.connect(mode=cx_Oracle.SYSDBA)
+            else:
+                conn = cx_Oracle.connect()
+        elif (not user and not password ): # If neither user or password is supplied, the use of an oracle wallet is assumed
             if mode == 'sysdba':
                 connect = wallet_connect
                 conn = cx_Oracle.connect(wallet_connect, mode=cx_Oracle.SYSDBA)
